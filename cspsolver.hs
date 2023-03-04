@@ -15,9 +15,7 @@ threatenPosition (i,j) = [(i,j)] ++ col  ++ row ++ diagSE ++ diagNE ++ diagNW ++
           diagNW = [(i-l, j+l) | l <- [1..min (i-1) (n-j)]]
           diagSW = [(i-l, j-l) | l <- [1..min (i-1) (j-1)]]
 
-heuristic :: Domain -> Position
-heuristic x =
-    where min $ len $ threatenPosition x
+
 
 algo :: Int -> Domain -> Maybe [Position]
 algo _ [] = Nothing 
