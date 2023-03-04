@@ -1,11 +1,20 @@
 import qualified Data.List as L
-type Var = Int
-type Position = (Int, Int)
-type Domain = [Position]
+import qualified Data.IntMap as M
+import Data.Maybe
 
 n = 20
+type Var = Int
+type Position = (Int, Int)
+
+{- 
+type Domain = [Position]
+
+
+
 initialDomain:: Domain
 initialDomain = [(i,j)| i <-[1..n], j<-[1..n]]
+
+
 threatenPosition :: Position -> [Position]
 threatenPosition (i,j) = [(i,j)] ++ col  ++ row ++ diagSE ++ diagNE ++ diagNW ++ diagSW
     where col = [(k,j) | k <- [1..n], k /= i]
@@ -24,3 +33,10 @@ algo n d@(x:ps) = case algo (n-1) d' of
                         Just result -> Just (x:result)
                         Nothing -> algo n ps
     where d' = d L.\\ threatenPosition x
+
+-}
+type Domain = M.IntMap ()
+
+existsIn :: Position -> Domain -> Bool
+existsIn (i,j) dom = isJust $ M.lookup k dom 
+    where k = i*(n+1) +j
