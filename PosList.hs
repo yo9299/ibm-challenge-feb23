@@ -1,5 +1,5 @@
 module PosList where
-import qualified Data.IntMap as M
+import qualified Data.IntMap.Strict as M
 import Data.Maybe
 type PosList = M.IntMap ()
 type Position = (Int, Int)
