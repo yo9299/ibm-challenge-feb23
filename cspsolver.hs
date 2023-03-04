@@ -4,11 +4,10 @@ import qualified Data.Array as A
 import qualified Data.IntMap.Strict as M
 import Data.Maybe
 import PosList
-
+import King
 
 type Var = Int
-type Domain = PosList
-type Board = M.IntMap Int
+
 
 updateBoard :: Position -> Board -> Board
 updateBoard pos board = foldr f board pl
@@ -25,23 +24,27 @@ threatenPosition (i,j) = mkPosList $ [(i,j)] ++ col  ++ row ++ diagSE ++ diagNE 
           diagSW = [(i-l, j-l) | l <- [1..min (i-1) (j-1)]]
 
 
-
-selectHeadPos:: Domain -> Position
-selectHeadPos dom 
-    | M.null dom = error "selectPos: called with empty domain"
-    | otherwise = head $ getPositions dom
+selectPos' :: Domain -> Board -> Position
+selectPos' dom b = L.maximumBy f $ getPositions dom
+    where posVal :: Position -> Int
+          posVal pos = length $ safeSpaces $ updateBoard pos b
+          f pos1 pos2 = posVal pos1 `compare` posVal pos2
 
 algo' :: Int -> Domain -> Board -> Maybe ([Position] , Board)
-algo' n dom b
+algo' k dom b
     | M.null dom = Nothing
-    | n==1 = let newPos = head $ getPositions dom
-             in Just  ([newPos], updateBoard newPos b) 
+    | k==1 = let newPos = selectPos' dom b
+                 spaces = safeSpaces $ updateBoard newPos b
+                 sols = kAlgo n spaces []
+             in --Just  ([newPos], updateBoard newPos b) 
+                if length sols == 48 then Just ([newPos], updateBoard newPos b)
+                    else algo' k (M.delete (posToKey newPos) dom) b
     | otherwise = let chosenPos = selectPos dom
                       dom' = dom M.\\ threatenPosition chosenPos
                       b' = updateBoard chosenPos b
-                  in case algo' (n-1) dom' b' of
+                  in case algo' (k-1) dom' b' of
                         Just (result, finalBoard) -> Just ((chosenPos:result), finalBoard)
-                        Nothing -> algo' n (M.delete (posToKey chosenPos) dom) b
+                        Nothing -> algo' k (M.delete (posToKey chosenPos) dom) b
 
 algo = algo' n initialDomain initialBoard
 

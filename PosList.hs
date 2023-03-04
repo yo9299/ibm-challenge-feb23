@@ -3,6 +3,7 @@ import qualified Data.IntMap.Strict as M
 import Data.Maybe
 type PosList = M.IntMap ()
 type Position = (Int, Int)
+type Domain = PosList
 
 n = 20
 existsIn :: Position -> PosList -> Bool
@@ -21,3 +22,8 @@ posToKey (i,j) = i*(n+1) +j
 mkPosList :: [Position] -> PosList
 mkPosList l = M.fromList assoc
     where assoc = map (\ p -> (posToKey p, ())) l
+
+selectHeadPos:: Domain -> Position
+selectHeadPos dom 
+    | M.null dom = error "selectPos: called with empty domain"
+    | otherwise = head $ getPositions dom
