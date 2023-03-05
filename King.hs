@@ -13,8 +13,15 @@ type PartialSolution = [Position]
 safeSpaces :: Board -> Domain
 safeSpaces b = fmap (\_ -> ()) $ M.filter (==2) b 
 
-kThreatenPos :: Position -> PosList
-kThreatenPos (i,j) = mkPosList $ filter (\ (k,l) -> k >= 1 && l >= 1 && k <= n && l <= n) candidates
+numberOfIndependentSafeSpaces :: Domain -> Int
+numberOfIndependentSafeSpaces spaces = length indepSpaces
+    where indepSpaces = [sp | sp <- getPositions spaces,
+                              [thp | thp <- kThreatenPos' sp, isJust $ posToKey thp `M.lookup` spaces] == [sp]]
+    
+kThreatenPos:: Position -> PosList
+kThreatenPos = mkPosList . kThreatenPos' 
+kThreatenPos' :: Position -> [Position]
+kThreatenPos' (i,j) = filter (\ (k,l) -> k >= 1 && l >= 1 && k <= n && l <= n) candidates
     where candidates = [(i-1,j-1), (i-1, j), (i-1, j+1), 
                         (i, j-1), (i,j), (i, j+1),
                         (i+1, j-1), (i+1, j), (i+1, j+1)]

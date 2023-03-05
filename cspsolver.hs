@@ -25,31 +25,48 @@ threatenPosition (i,j) = mkPosList $ [(i,j)] ++ col  ++ row ++ diagSE ++ diagNE 
           diagSW = [(i-l, j-l) | l <- [1..min (i-1) (j-1)]]
 
 
-selectPos' :: Domain -> Board -> Position
-selectPos' dom b = L.maximumBy f $ getPositions dom
+selectPosMaximumBy :: Domain -> Board -> Position
+selectPosMaximumBy dom b = L.maximumBy f $ getPositions dom
+    where posVal :: Position -> Int
+          posVal pos = length $ safeSpaces $ updateBoard pos b
+          f pos1 pos2 = posVal pos1 `compare` posVal pos2
+selectPosMinimumBy :: Domain -> Board -> Position
+selectPosMinimumBy dom b = L.minimumBy f $ getPositions dom
     where posVal :: Position -> Int
           posVal pos = length $ safeSpaces $ updateBoard pos b
           f pos1 pos2 = posVal pos1 `compare` posVal pos2
 
-algo' :: Int -> Domain -> Board -> Maybe ([Position] , Board)
-algo' k dom b
-    | M.null dom = Nothing
-    | k==1 = let newPos = selectPos' dom b
-                 spaces = safeSpaces $ updateBoard newPos b
-                 sols = kAlgo n spaces []
-             in trace ("found queen assignment with " ++ show (length spaces) ++ " safe spaces. kAlgo returned: " ++ show sols) $
-                if length spaces >= 20 
-                   && isJust sols 
-                   && (trace (show $ length $ fromJust sols) $ length (fromJust sols) == 48) then Just ([newPos], updateBoard newPos b)
-                    else algo' k (M.delete (posToKey newPos) dom) b
-    | otherwise = let chosenPos = selectPos dom
-                      dom' = dom M.\\ threatenPosition chosenPos
-                      b' = updateBoard chosenPos b
-                  in case algo' (k-1) dom' b' of
-                        Just (result, finalBoard) -> Just ((chosenPos:result), finalBoard)
-                        Nothing -> algo' k (M.delete (posToKey chosenPos) dom) b
+onKequal1 :: Domain -> PosList -> Board -> Maybe ([Position], Board)
+onKequal1 dom triedPos b 
+        | nbSpaces <= 20 = trace ("not enough safe spaces") Nothing
+        | numberOfIndependentSafeSpaces spaces >= 22 = trace ("too much independent safe spaces") Nothing
+        | otherwise = case sols of
+                        Nothing -> trace ("king solver found too many solutions") $ algo' 1 (M.delete (posToKey newPos) dom) (M.insert (posToKey newPos) () triedPos) b
+                        Just results -> if length results == 48 
+                                            then trace ("youhouuuuu:") $ Just ([newPos], board)
+                                            else trace ("king solver found " ++ show (length results) ++ " solutions") $
+                                                    algo' 1 (M.delete (posToKey newPos) dom) (M.insert (posToKey newPos) () triedPos) b
+                          
 
-algo = algo' n initialDomain initialBoard
+    where nbSpaces = length spaces
+          newPos = selectPosMinimumBy dom b
+          board = updateBoard newPos b
+          spaces = safeSpaces board
+          sols = kAlgo n spaces []
+
+
+algo' :: Int -> Domain -> PosList -> Board -> Maybe ([Position] , Board)
+algo' k dom triedPos b
+    | M.null dom = Nothing
+    | k == 1 = trace ("Found a new queen assignment") $ onKequal1 dom triedPos b
+    | otherwise = let chosenPos = selectPos dom
+                      dom' = dom M.\\ threatenPosition chosenPos M.\\ triedPos
+                      b' = updateBoard chosenPos b
+                  in case algo' (k-1) dom' M.empty b' of
+                        Just (result, finalBoard) -> Just ((chosenPos:result), finalBoard)
+                        Nothing -> algo' k (M.delete (posToKey chosenPos) dom) (M.insert (posToKey chosenPos) () triedPos) b
+
+algo = algo' n initialDomain M.empty initialBoard
 
 
 
@@ -68,6 +85,18 @@ selectPos :: Domain -> Position
 selectPos dom = let listPositions = getPositions dom 
                     f pos1 pos2 = heuristicVal dom pos1 `compare` heuristicVal dom pos2
                 in L.maximumBy f listPositions
+
+selectPos' :: Domain -> Board -> Position
+selectPos' dom board = let listPositions = getPositions dom 
+                           heuristic pos = M.size $ safeSpaces $ updateBoard pos board
+                           f pos1 pos2 
+                                | cmpDom == EQ = cmpH
+                                | otherwise = cmpDom
+                            where cmpH =  heuristic pos2 `compare` heuristic pos1
+                                  cmpDom = heuristicVal dom pos1 `compare` heuristicVal dom pos2
+                                        
+                       in L.maximumBy f listPositions
+
 
 
 dumpSolution :: [Position] -> String 
