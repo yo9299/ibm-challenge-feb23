@@ -23,7 +23,10 @@ kAlgo :: Int -> Domain -> PartialSolution -> Maybe [Solution]
 kAlgo k dom partSol
     | M.null dom = Just []
     | k==1 = let totalsols = fmap L.sort $ map (: partSol) (getPositions dom)
-             in trace ("found " ++ show (length totalsols) ++ " king assignments") $ Just totalsols
+             in trace ("[leaf] found " ++ show (length totalsols) ++ " king assignments") $ 
+                    if length totalsols <= 48 
+                        then Just totalsols
+                        else Nothing
     | otherwise = let explore :: Position -> Maybe [Solution]
                       explore pos = let dom' = dom M.\\ (kThreatenPos pos)
                                         partSol' = pos:partSol
@@ -31,8 +34,8 @@ kAlgo k dom partSol
                       f el Nothing = Nothing
                       f el (Just sols) = let ret = explore el
                                              newsols = L.nub $ fromJust ret ++ sols 
-                                         in if  isNothing ret then Nothing
+                                         in if  isNothing ret then trace ("[depth=" ++ show k ++ "] cutting") Nothing
                                             else if length newsols <= 48
-                                                 then Just newsols 
-                                                 else trace ("stopping king solver: " ++ show (length newsols) ++ " solutions have been enumerated.") Nothing 
+                                                 then trace ("[depth=" ++ show k ++ "] current size= " ++ show (length newsols)) Just newsols 
+                                                 else trace ("[depth="  ++ show k ++ "] stopping king solver: " ++ show (length newsols) ++ " solutions have been enumerated.") Nothing 
                   in foldr f (Just []) $ getPositions dom
