@@ -5,6 +5,7 @@ import qualified Data.IntMap.Strict as M
 import Data.Maybe
 import PosList
 import King
+import Debug.Trace
 
 type Var = Int
 
@@ -36,8 +37,10 @@ algo' k dom b
     | k==1 = let newPos = selectPos' dom b
                  spaces = safeSpaces $ updateBoard newPos b
                  sols = kAlgo n spaces []
-             in --Just  ([newPos], updateBoard newPos b) 
-                if length sols == 48 then Just ([newPos], updateBoard newPos b)
+             in trace ("found queen assignment with " ++ show (length spaces) ++ " safe spaces. kAlgo returned: " ++ show sols) $
+                if length spaces >= 20 
+                   && isJust sols 
+                   && (trace (show $ length $ fromJust sols) $ length (fromJust sols) == 48) then Just ([newPos], updateBoard newPos b)
                     else algo' k (M.delete (posToKey newPos) dom) b
     | otherwise = let chosenPos = selectPos dom
                       dom' = dom M.\\ threatenPosition chosenPos
